@@ -3,6 +3,7 @@ package model
 import (
 	"time"
 
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -25,4 +26,20 @@ type Medicine struct {
 	Price float64 `json:"price"`
 	Stock int     `json:"stock"`
 	OrgID uint    `json:"org_id"`
+}
+
+// GeneratePassword 给密码加密
+func (u *User) BeforeCreate(tx *gorm.DB) (err error) {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	u.Password = string(hashedPassword)
+	return nil
+}
+
+// CheckPassword 验证密码
+func (u *User) CheckPassword(password string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
+	return err == nil
 }
