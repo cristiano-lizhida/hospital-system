@@ -1,0 +1,44 @@
+# --- 系统运行与存算分离 (核心忽略项) ---
+# 绝对不要把数据库文件和上传的图片提交到仓库(暂时上传测试数据，便于测试)
+# /storage/
+# *.db
+# *.db-wal
+# *.db-shm
+
+# --- 前端 (React/Vite) 忽略项 ---
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/*.local
+frontend/.env*
+# 忽略前端依赖锁定文件的日志
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+
+# --- 后端 (Golang) 忽略项 ---
+# 忽略编译后的二进制文件 (Windows exe 和 Linux 二进制)
+backend/main
+backend/server
+backend/*.exe
+backend/*.exe~
+backend/*.dll
+backend/*.so
+backend/*.dylib
+# 忽略开发中的本地配置
+backend/config/*.local.yaml
+backend/.env
+
+# --- 编辑器与系统杂质 ---
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+# 常见的系统临时文件
+Thumbs.db

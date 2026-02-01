@@ -1,0 +1,21 @@
+server:
+  port: 8080
+  env: dev
+
+database:
+  type: sqlite
+  path: /storage/db/hospital.db
+  max_idle_conns: 10
+  max_open_conns: 100
+
+storage:
+  upload_path: /storage/uploads
+  max_file_size: 52428800
+
+jwt:
+  secret: your-secret-key
+  expires_in: 86400
+
+log:
+  level: debug
+  output: stdout
