@@ -12,7 +12,7 @@ type User struct {
 	ID        uint           `gorm:"primaryKey" json:"id"`
 	Username  string         `gorm:"unique;not null" json:"username"`
 	Password  string         `gorm:"not null" json:"-"`    // 不参与 JSON 序列化
-	Role      string         `gorm:"not null" json:"role"` // admin, doctor, cashier, registrar, storekeeper
+	Role      string         `gorm:"not null" json:"role"` // global_admin, org_admin, finance, storekeeper, registration, general_user
 	OrgID     uint           `json:"org_id"`               // 所属机构ID
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
@@ -27,8 +27,6 @@ type Medicine struct {
 	Stock int     `json:"stock"`
 	OrgID uint    `json:"org_id"`
 }
-
-// --- 以下为补充的业务模型 (为了让API能跑通) ---
 
 // Patient 患者表
 type Patient struct {

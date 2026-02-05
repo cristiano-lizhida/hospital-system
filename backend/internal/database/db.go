@@ -30,7 +30,14 @@ func InitDB(dbPath string) {
 	DB.Exec("PRAGMA journal_mode=WAL;")
 
 	// 4. 自动迁移表结构 (自动在 SQLite 里建表)
-	err = DB.AutoMigrate(&model.User{}, &model.Medicine{})
+	err = DB.AutoMigrate(
+		&model.User{},
+		&model.Medicine{},
+		&model.Patient{},
+		&model.Booking{},
+		&model.MedicalRecord{},
+		&model.Order{},
+	)
 	if err != nil {
 		log.Printf("自动迁移失败: %v", err)
 	}

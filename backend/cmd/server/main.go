@@ -4,7 +4,6 @@ import (
 	"hospital-system/internal/api"
 	"hospital-system/internal/api/middleware"
 	"hospital-system/internal/database"
-	"hospital-system/internal/model"
 
 	"github.com/gin-gonic/gin"
 )
@@ -12,16 +11,6 @@ import (
 func main() {
 	// 1. 初始化数据库
 	database.InitDB("./storage/db/hospital.db")
-
-	// --- 自动迁移数据库结构 (重要！为了让新增的表生效) ---
-	database.DB.AutoMigrate(
-		&model.User{},
-		&model.Medicine{},
-		&model.Patient{},
-		&model.Booking{},
-		&model.MedicalRecord{},
-		&model.Order{},
-	)
 
 	// 2. 初始化 Gin 路由
 	r := gin.Default()
@@ -49,10 +38,9 @@ func main() {
 	dash.Use(middleware.AuthMiddleware())
 	{
 		// [Group 1] 挂号业务 (/bookings)
-		// 权限: 挂号员 (registrar), 管理员 (admin)
 		// 对应图中: /bookings -> 预约就诊相关
 		booking := dash.Group("/bookings")
-		booking.Use(middleware.RoleMiddleware("registrar", "admin"))
+		booking.Use(middleware.RoleMiddleware("general_user", "registration", "org_adimn", "global_admin"))
 		{
 			booking.GET("/", api.GetBookings)    // 列表：显示所有挂号
 			booking.POST("/", api.CreateBooking) // 操作：新增挂号
@@ -62,7 +50,7 @@ func main() {
 		// 权限: 财务 (cashier), 管理员 (admin)
 		// 对应图中: /payment -> 缴费入口
 		payment := dash.Group("/payment")
-		payment.Use(middleware.RoleMiddleware("cashier", "admin"))
+		payment.Use(middleware.RoleMiddleware("general_user", "finance", "org_adimn", "global_admin"))
 		{
 			payment.GET("/", api.GetUnpaidOrders) // 列表：显示所有 Unpaid 订单
 			payment.POST("/", api.ConfirmPayment) // 操作：点击“确认收费”
@@ -72,7 +60,7 @@ func main() {
 		// 权限: 医生 (doctor), 管理员 (admin)
 		// 对应图中: /doctor -> 医生专用面板
 		doctor := dash.Group("/doctor")
-		doctor.Use(middleware.RoleMiddleware("doctor", "admin"))
+		doctor.Use(middleware.RoleMiddleware("doctor", "org_adimn", "global_admin"))
 		{
 			doctor.GET("/patients", api.GetPendingPatients)  // 左侧：候诊列表 (Status=Pending)
 			doctor.POST("/records", api.SubmitMedicalRecord) // 右侧：提交诊断 -> 生成订单
@@ -82,10 +70,9 @@ func main() {
 		// 权限: 医生, 挂号员, 财务 (不同角色视角不同，此处简化为都有权查看)
 		// 对应图中: /record -> 展示问诊记录
 		record := dash.Group("/record")
-		record.Use(middleware.RoleMiddleware("doctor", "registrar", "cashier", "admin"))
+		record.Use(middleware.RoleMiddleware("doctor", "registration", "finance", "org_adimn", "global_admin"))
 		{
-			// 这里复用 GetBookings 或单独写查询逻辑，MVP暂复用
-			record.GET("/", api.GetBookings)
+			record.GET("/", api.GetRecords)
 		}
 
 		// [Group 5] 物资/库房 (/storehouse)
@@ -94,16 +81,16 @@ func main() {
 		store := dash.Group("/storehouse")
 		{
 			// 医生只能看库存，不能改
-			store.GET("/", middleware.RoleMiddleware("doctor", "storekeeper", "admin"), api.GetInventory)
+			store.GET("/", middleware.RoleMiddleware("doctor", "storekeeper", "org_adimn", "global_admin"), api.GetInventory)
 			// 只有库管和管理员能进货
-			store.POST("/", middleware.RoleMiddleware("storekeeper", "admin"), api.AddMedicine)
+			store.POST("/", middleware.RoleMiddleware("storekeeper", "org_adimn", "global_admin"), api.AddMedicine)
 		}
 
 		// [Group 6] 用户管理 (/users)
-		// 权限: 仅限超级管理员 (admin)
+		// 权限: 仅限管理员
 		// 对应图中: /users -> 统一管理账号
 		admin := dash.Group("/users")
-		admin.Use(middleware.RoleMiddleware("admin"))
+		admin.Use(middleware.RoleMiddleware("org_adimn", "global_admin"))
 		{
 			admin.GET("/", api.ManageUserStatus)
 		}

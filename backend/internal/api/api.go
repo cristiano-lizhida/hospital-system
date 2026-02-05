@@ -259,6 +259,12 @@ func AddMedicine(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"msg": "添加药品成功", "data": med})
 }
 
+// --- 记录 (Record) ---
+// 对应页面：/record
+func GetRecords(c *gin.Context) {
+	// 待实现
+}
+
 // --- 用户管理 (Users) ---
 // 对应页面：/users
 
