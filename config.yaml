@@ -1,0 +1,14 @@
+# hospital-system/config.yaml
+
+server:
+  port: 8080            # 后端运行端口
+  frontend_port: 5173   # 前端运行端口 (仅作记录，Vite配置中读取server.port做代理)
+
+database:
+  # 数据库路径 (相对于后端运行目录 backend/ 的路径)
+  path: "./storage/db/hospital.db" 
+
+auth:
+  # JWT 密钥 (生产环境请使用复杂的随机字符串)
+  jwt_secret: "ahjz-hospital-2026-v1"
+  jwt_expire_hours: 24

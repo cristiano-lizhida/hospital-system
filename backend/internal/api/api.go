@@ -64,22 +64,27 @@ func LoginHandler(c *gin.Context) {
 }
 
 func RegisterHandler(c *gin.Context) {
-	var req RegisterRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	var user model.User
+	// 1. 直接绑定，减少手动赋值
+	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "参数错误"})
 		return
 	}
-	// 创建用户
-	user := model.User{
-		Username: req.Username,
-		Password: req.Password, // BeforeCreate 会自动加密
-		Role:     req.Role,
-		OrgID:    1, // MVP 默认机构1
+
+	// 2. 安全防线：不论前端传什么 role，这里强制改为普通用户
+	user.Role = "general_user"
+
+	// 3. 初始机构逻辑
+	if user.OrgID == 0 {
+		user.OrgID = 1 // 默认主院区
 	}
+
+	// 4. 执行写入
 	if err := database.DB.Create(&user).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "注册失败，用户名可能已存在"})
+		c.JSON(http.StatusConflict, gin.H{"error": "注册失败，用户名已存在"})
 		return
 	}
+
 	c.JSON(http.StatusOK, gin.H{"msg": "注册成功"})
 }
 

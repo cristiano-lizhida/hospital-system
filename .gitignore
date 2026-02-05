@@ -29,6 +29,8 @@ backend/*.dylib
 # 忽略开发中的本地配置
 backend/config/*.local.yaml
 backend/.env
+pack_project.py
+project_context.txt
 
 # --- 编辑器与系统杂质 ---
 .vscode/*
@@ -42,3 +44,4 @@ backend/.env
 *.sw?
 # 常见的系统临时文件
 Thumbs.db
+

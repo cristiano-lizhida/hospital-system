@@ -8,7 +8,11 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var JwtKey = []byte("your_secret_key") // 实际项目应从环境变量读取
+var JwtKey []byte
+
+func InitAuth(secret string) {
+	JwtKey = []byte(secret)
+}
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
