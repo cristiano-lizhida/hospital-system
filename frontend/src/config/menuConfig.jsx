@@ -27,7 +27,7 @@ export const menuConfig = [
         path: 'payment',
         label: '缴费中心',
         icon: <CreditCard size={18} />,
-        roles: [ROLES.GENERAL_USER]
+        roles: [ROLES.GENERAL_USER, ROLES.FINANCE]
     },
     {
         path: 'storehouse',
