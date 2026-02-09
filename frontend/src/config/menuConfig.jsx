@@ -42,7 +42,7 @@ export const menuConfig = [
         path: 'storehouse',
         label: '物资库房',
         icon: <Package size={18} />,
-        roles: [ROLES.STOREKEEPER]
+        roles: [ROLES.STOREKEEPER, ROLES.ORG_ADMIN, ROLES.GLOBAL_ADMIN]
     },
     {
         path: 'record',

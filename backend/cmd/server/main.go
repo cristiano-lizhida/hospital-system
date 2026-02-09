@@ -53,6 +53,8 @@ func main() {
 	dash := r.Group("/api/v1/dashboard")
 	dash.Use(middleware.AuthMiddleware())
 	{
+		// 对应 Module 6：获取首页统计数据
+		dash.GET("/stats", api.GetDashboardStats)
 		// [Group 1] 挂号业务 (/bookings)
 		// 对应图中: /bookings -> 预约就诊相关
 		booking := dash.Group("/bookings")
