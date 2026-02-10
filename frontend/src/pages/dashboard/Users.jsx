@@ -1,11 +1,17 @@
 import { useEffect, useState } from 'react';
-import { Table, Card, Tag, message, Avatar } from 'antd';
-import { UserOutlined } from '@ant-design/icons';
+import { Table, Card, Tag, message, Avatar, Button, Modal, Form, Input, Select } from 'antd';
+import { UserOutlined, PlusOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import request from '../../utils/request';
+
+const { Option } = Select;
 
 const Users = () => {
   const [users, setUsers] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [form] = Form.useForm();
+  const [loading, setLoading] = useState(false);
 
+  // 1. 获取人员名单
   const fetchUsers = async () => {
     try {
       const res = await request.get('/dashboard/users');
@@ -19,12 +25,32 @@ const Users = () => {
     fetchUsers();
   }, []);
 
+  // 2. 提交新增员工
+  const handleCreate = async () => {
+    try {
+      setLoading(true);
+      const values = await form.validateFields();
+      
+      // 调用刚才写的新接口
+      await request.post('/dashboard/users', values);
+      
+      message.success('🎉 员工账号创建成功！');
+      setIsModalOpen(false);
+      form.resetFields();
+      fetchUsers(); // 刷新表格
+    } catch (error) {
+        const errorMsg = error.response?.data?.error || '创建失败';
+        message.error(errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const roleColors = {
     'global_admin': 'magenta',
     'org_admin': 'red',
     'doctor': 'blue',
-    'nurse': 'cyan',
-    'registration': 'cyan',
+    'registration': 'cyan', // 之前叫 nurse，现在统一叫 registration 
     'finance': 'gold',
     'storekeeper': 'purple',
     'general_user': 'default'
@@ -32,20 +58,16 @@ const Users = () => {
 
   const roleNames = {
     'global_admin': '超级管理员',
+    'org_admin': '院区负责人',
     'doctor': '医生',
     'registration': '挂号员',
     'finance': '财务',
     'storekeeper': '库管员',
-    'general_user': '患者/普通用户'
+    'general_user': '患者'
   };
 
   const columns = [
-    { title: 'ID', dataIndex: 'id', key: 'id' },
-    { 
-      title: '头像', 
-      key: 'avatar',
-      render: () => <Avatar icon={<UserOutlined />} />
-    },
+    { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
     { 
       title: '用户名', 
       dataIndex: 'username', 
@@ -66,8 +88,45 @@ const Users = () => {
   ];
 
   return (
-    <Card title="👥 医院人员花名册 (管理员视图)">
-      <Table rowKey="id" dataSource={users} columns={columns} />
+    <Card 
+      title="👥 医院人员编制管理" 
+      extra={
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalOpen(true)}>
+          新增员工
+        </Button>
+      }
+    >
+      <Table rowKey="id" dataSource={users} columns={columns} pagination={{ pageSize: 8 }} />
+
+      {/* 新增员工弹窗 */}
+      <Modal 
+        title="📝 录入新员工信息" 
+        open={isModalOpen} 
+        onOk={handleCreate} 
+        onCancel={() => setIsModalOpen(false)}
+        confirmLoading={loading}
+      >
+        <Form form={form} layout="vertical">
+          <Form.Item name="username" label="登录账号" rules={[{ required: true, message: '请输入账号' }]}>
+            <Input prefix={<UserOutlined />} placeholder="例如：doctor_li" />
+          </Form.Item>
+          
+          <Form.Item name="password" label="初始密码" rules={[{ required: true, message: '请输入密码' }]}>
+            <Input.Password placeholder="建议设置为复杂密码" />
+          </Form.Item>
+
+          <Form.Item name="role" label="分配岗位" rules={[{ required: true, message: '请选择岗位角色' }]}>
+            <Select placeholder="请选择角色">
+              <Option value="doctor">临床医生 (Doctor)</Option>
+              <Option value="registration">挂号员 (Registration)</Option>
+              <Option value="finance">财务/收银 (Finance)</Option>
+              <Option value="storekeeper">库房管理员 (Storekeeper)</Option>
+              <Option value="org_admin">院区管理者 (Org Admin)</Option>
+              {/* 通常不在这里创建 global_admin 或 general_user */}
+            </Select>
+          </Form.Item>
+        </Form>
+      </Modal>
     </Card>
   );
 };

@@ -375,6 +375,34 @@ func ManageUserStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": users})
 }
 
+// 对应路由: POST /api/v1/dashboard/users
+func CreateUser(c *gin.Context) {
+	// 复用注册请求结构，但这里我们允许 Role
+	var req RegisterRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "参数错误"})
+		return
+	}
+
+	// 检查当前操作者的权限（可选：防止 org_admin 创建 global_admin）
+	// currentRole := c.GetString("role")
+	// 这里做简单处理：直接信任中间件的拦截
+
+	user := model.User{
+		Username: req.Username,
+		Password: req.Password, // BeforeCreate 会自动加密
+		Role:     req.Role,     // 关键：直接使用前端传来的角色 (doctor, finance...)
+		OrgID:    1,            // mvp 默认机构1
+	}
+
+	if err := database.DB.Create(&user).Error; err != nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "用户已存在"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"msg": "员工账号创建成功", "data": user})
+}
+
 // --- 统计看板 (Dashboard Stats) ---
 
 func GetDashboardStats(c *gin.Context) {

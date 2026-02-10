@@ -7,6 +7,7 @@ import (
 	"hospital-system/internal/api"
 	"hospital-system/internal/api/middleware"
 	"hospital-system/internal/database"
+	"hospital-system/internal/model"
 
 	"github.com/gin-gonic/gin"
 )
@@ -25,7 +26,24 @@ func main() {
 	// 确保 config.yaml 里的路径是 "./storage/db/hospital.db"
 	database.InitDB(config.AppConfig.Database.Path)
 
-	// 4. 初始化 Gin 路由
+	// 4. 初始化全局管理员(如果没有管理员，自动创建一个)
+	var adminCount int64
+	database.DB.Model(&model.User{}).Where("role = ?", "global_admin").Count(&adminCount)
+	if adminCount == 0 {
+		log.Println("⚠️ 检测到系统中没有管理员，正在初始化默认账号...")
+		defaultAdmin := model.User{
+			Username: "admin",
+			Password: "admin123", // 会自动加密
+			Role:     "global_admin",
+			OrgID:    1,
+		}
+		if err := database.DB.Create(&defaultAdmin).Error; err != nil {
+			log.Fatalf("初始化管理员失败: %v", err)
+		}
+		log.Println("✅ 默认管理员已创建 -> 账号: admin / 密码: admin123")
+	}
+
+	// 5. 初始化 Gin 路由
 	r := gin.Default()
 
 	// 心跳测试
@@ -112,6 +130,7 @@ func main() {
 		admin.Use(middleware.RoleMiddleware("org_admin", "global_admin"))
 		{
 			admin.GET("/", api.ManageUserStatus)
+			admin.POST("/", api.CreateUser)
 		}
 	}
 
