@@ -29,10 +29,21 @@ func AuthMiddleware() gin.HandlerFunc {
 		})
 
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			// 将用户信息存入上下文，后续 Handler 可以直接取出来
-			c.Set("user_id", claims["user_id"])
-			c.Set("role", claims["role"])
-			c.Set("org_id", claims["org_id"])
+			// 1. 处理 user_id (从 float64 转为 uint)
+			if uid, ok := claims["user_id"].(float64); ok {
+				c.Set("user_id", uint(uid))
+			}
+
+			// 2. 处理 role (必须转为 string，否则后续 string 比对会失败)
+			if role, ok := claims["role"].(string); ok {
+				c.Set("role", role)
+			}
+
+			// 3. 处理 org_id (从 float64 转为 uint)
+			if oid, ok := claims["org_id"].(float64); ok {
+				c.Set("org_id", uint(oid))
+			}
+
 			c.Next()
 		} else {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "无效的Token: " + err.Error()})

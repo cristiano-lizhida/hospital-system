@@ -17,7 +17,7 @@ const Users = () => {
       const res = await request.get('/dashboard/users');
       setUsers(res.data || []);
     } catch (error) {
-      message.error('获取人员名单失败');
+      message.error('获取用户名单失败');
     }
   };
 
@@ -25,16 +25,15 @@ const Users = () => {
     fetchUsers();
   }, []);
 
-  // 2. 提交新增员工
+  // 2. 提交新增用户
   const handleCreate = async () => {
     try {
       setLoading(true);
       const values = await form.validateFields();
       
-      // 调用刚才写的新接口
       await request.post('/dashboard/users', values);
       
-      message.success('🎉 员工账号创建成功！');
+      message.success('🎉 用户账号创建成功！');
       setIsModalOpen(false);
       form.resetFields();
       fetchUsers(); // 刷新表格
@@ -50,7 +49,7 @@ const Users = () => {
     'global_admin': 'magenta',
     'org_admin': 'red',
     'doctor': 'blue',
-    'registration': 'cyan', // 之前叫 nurse，现在统一叫 registration 
+    'registration': 'cyan',
     'finance': 'gold',
     'storekeeper': 'purple',
     'general_user': 'default'
@@ -92,15 +91,15 @@ const Users = () => {
       title="👥 医院人员编制管理" 
       extra={
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalOpen(true)}>
-          新增员工
+          新增用户
         </Button>
       }
     >
       <Table rowKey="id" dataSource={users} columns={columns} pagination={{ pageSize: 8 }} />
 
-      {/* 新增员工弹窗 */}
+      {/* 新增用户弹窗 */}
       <Modal 
-        title="📝 录入新员工信息" 
+        title="📝 录入新用户信息" 
         open={isModalOpen} 
         onOk={handleCreate} 
         onCancel={() => setIsModalOpen(false)}
@@ -119,7 +118,7 @@ const Users = () => {
             <Select placeholder="请选择角色">
               <Option value="doctor">临床医生 (Doctor)</Option>
               <Option value="registration">挂号员 (Registration)</Option>
-              <Option value="finance">财务/收银 (Finance)</Option>
+              <Option value="finance">财务 (Finance)</Option>
               <Option value="storekeeper">库房管理员 (Storekeeper)</Option>
               <Option value="org_admin">院区管理者 (Org Admin)</Option>
               {/* 通常不在这里创建 global_admin 或 general_user */}

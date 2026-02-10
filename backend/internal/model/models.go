@@ -1,6 +1,7 @@
 package model
 
 import (
+	"strings"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -71,6 +72,11 @@ type Order struct {
 
 // GeneratePassword 给密码加密
 func (u *User) BeforeCreate(tx *gorm.DB) (err error) {
+	// 增加一层保护：如果密码看起来已经是 bcrypt 哈希（以 $2a$ 开头），则跳过
+	if strings.HasPrefix(u.Password, "$2a$") {
+		return nil
+	}
+
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return err

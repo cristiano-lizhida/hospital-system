@@ -4,6 +4,7 @@ import (
 	"hospital-system/internal/api/middleware"
 	"hospital-system/internal/database"
 	"hospital-system/internal/model"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -38,10 +39,17 @@ func LoginHandler(c *gin.Context) {
 		return
 	}
 
+	log.Printf("【调试】正在比对用户: %s", user.Username)
+	log.Printf("【调试】用户输入明文: %s", req.Password)
+	log.Printf("【调试】数据库存储哈希: %s", user.Password)
+
 	if !user.CheckPassword(req.Password) {
+		log.Println("【结果】密码比对失败！")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "密码错误"})
 		return
 	}
+
+	log.Println("【结果】密码比对成功")
 
 	// 签发 Token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
@@ -64,22 +72,22 @@ func LoginHandler(c *gin.Context) {
 }
 
 func RegisterHandler(c *gin.Context) {
-	var user model.User
-	// 1. 直接绑定，减少手动赋值
-	if err := c.ShouldBindJSON(&user); err != nil {
+	// RegisterRequest 接收参数，而不是 model.User
+	var req RegisterRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "参数错误"})
 		return
 	}
 
-	// 2. 安全防线：不论前端传什么 role，这里强制改为普通用户
-	user.Role = "general_user"
-
-	// 3. 初始机构逻辑
-	if user.OrgID == 0 {
-		user.OrgID = 1 // 默认主院区
+	// 2. 手动构建 model.User 对象
+	user := model.User{
+		Username: req.Username,
+		Password: req.Password,   // 此时 req.Password 是有值的！
+		Role:     "general_user", // 强制指定角色
+		OrgID:    1,              //默认主院区
 	}
 
-	// 4. 执行写入
+	// 3. 执行写入 (BeforeCreate 会自动加密 user.Password)
 	if err := database.DB.Create(&user).Error; err != nil {
 		c.JSON(http.StatusConflict, gin.H{"error": "注册失败，用户名已存在"})
 		return
@@ -400,7 +408,7 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"msg": "员工账号创建成功", "data": user})
+	c.JSON(http.StatusOK, gin.H{"msg": "用户创建成功", "data": user})
 }
 
 // --- 统计看板 (Dashboard Stats) ---
