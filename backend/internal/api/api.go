@@ -109,46 +109,95 @@ type BookingRequest struct {
 	// Phone    string `json:"phone"` // 暂不存手机号，以免数据库报错，除非你在 model 里加了 Phone
 }
 
-// GetBookings 获取挂号列表（按时间倒序）
+// GetBookings 获取挂号列表
 func GetBookings(c *gin.Context) {
+	// 1. 从中间件上下文中获取当前用户信息
+	// 注意：必须确保 AuthMiddleware 里正确设置了这些值
+	role := c.GetString("role")
+	userID := c.GetUint("user_id") // 假设中间件里 set 的是 uint
+
 	var bookings []model.Booking
-	// Order("created_at desc") 让最新的挂号显示在最上面
-	database.DB.Order("created_at desc").Find(&bookings)
+	tx := database.DB.Order("created_at desc")
+
+	// 2. 权限分流
+	if role == "general_user" {
+		// 【核心逻辑】如果是普通用户，必须先查出他的名字，然后只返回属于他的记录
+		var currentUser model.User
+		if err := database.DB.First(&currentUser, userID).Error; err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "无法获取用户信息"})
+			return
+		}
+		// 强制加上 WHERE 条件
+		tx = tx.Where("patient_name = ?", currentUser.Username)
+	}
+	// 如果是 registration/admin，则不加 Where 条件，默认查所有
+
+	// 3. 执行查询
+	if err := tx.Find(&bookings).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取列表失败"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{"data": bookings})
 }
 
-// CreateBooking 挂号员：新增挂号
+// CreateBooking
 func CreateBooking(c *gin.Context) {
 	var req BookingRequest
-	// 1. 绑定前端发来的 JSON 数据
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "参数错误: " + err.Error()})
 		return
 	}
 
-	// 2. 直接构建 Booking 对象 (MVP模式：不查 Patient 表，直接存)
+	// 1. 获取当前用户身份
+	role := c.GetString("role")
+	userID := c.GetUint("user_id")
+
+	// 2. 构建对象
 	booking := model.Booking{
-		PatientName: req.PatientName,
-		Age:         req.Age,
-		Gender:      req.Gender,
-		Department:  req.Department,
-		DoctorID:    req.DoctorID,
-		Status:      "Pending", // 默认状态：候诊中
-		CreatedAt:   time.Now(),
+		Age:        req.Age,
+		Gender:     req.Gender,
+		Department: req.Department,
+		DoctorID:   req.DoctorID,
+		Status:     "Pending",
+		CreatedAt:  time.Now(),
 	}
 
-	// 简单的兜底逻辑：如果前端没传医生ID，默认分配给 1 号医生
+	// 3. 【核心逻辑】姓名处理
+	if role == "general_user" {
+		// 如果是患者，强制使用当前登录账号的用户名，忽略前端传来的 PatientName
+		var currentUser model.User
+		database.DB.First(&currentUser, userID)
+		booking.PatientName = currentUser.Username
+	} else {
+		// 如果是挂号员，允许使用前端传来的名字（帮别人挂号）
+		if req.PatientName == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "挂号员必须填写患者姓名"})
+			return
+		}
+		booking.PatientName = req.PatientName
+	}
+
+	// 4. 兜底医生ID
 	if booking.DoctorID == 0 {
+		// 尝试分配给 ID 为 1 的医生，如果也没有，就置空
 		booking.DoctorID = 1
 	}
 
-	// 3. 写入数据库
 	if err := database.DB.Create(&booking).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "挂号失败"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "挂号成功", "data": booking})
+}
+
+// GetDoctorList 专门用于下拉框的医生列表接口 (公开给登录用户)
+func GetDoctorList(c *gin.Context) {
+	var doctors []model.User
+	// 只查询角色为 doctor 的用户，且只返回 ID 和 Username，保护隐私
+	database.DB.Where("role = ?", "doctor").Select("id, username, role").Find(&doctors)
+	c.JSON(http.StatusOK, gin.H{"data": doctors})
 }
 
 // --- 财务业务 (Finance/Payment) ---

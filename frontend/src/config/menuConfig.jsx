@@ -31,12 +31,6 @@ export const menuConfig = [
         // 注意：如果你只想让财务看收银台，可以去掉 GENERAL_USER
         roles: [ROLES.GENERAL_USER, ROLES.FINANCE] 
     },
-    {
-        path: 'payment-history', // 👈 2. 新增：这就是你刚做的历史记录页面
-        label: '缴费记录',
-        icon: <History size={18} />, // 使用 History 图标 (或者 FileText)
-        roles: [ROLES.FINANCE, ROLES.ORG_ADMIN, ROLES.GLOBAL_ADMIN] // 权限：财务+管理员
-    },
     // ===============
     {
         path: 'storehouse',

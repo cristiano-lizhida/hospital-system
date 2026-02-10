@@ -73,6 +73,9 @@ func main() {
 	{
 		// 对应 Module 6：获取首页统计数据
 		dash.GET("/stats", api.GetDashboardStats)
+		// 通用数据接口，所有登录用户都能获取医生列表
+		dash.GET("/doctors", api.GetDoctorList)
+
 		// [Group 1] 挂号业务 (/bookings)
 		// 对应图中: /bookings -> 预约就诊相关
 		booking := dash.Group("/bookings")

@@ -11,7 +11,6 @@ import Register from './pages/Register';
 import Overview from './pages/dashboard/Overview';
 import Bookings from './pages/dashboard/Bookings';
 import Payment from './pages/dashboard/Payment';
-import PaymentHistory from './pages/dashboard/PaymentHistory'; // 🆕 新增：引入历史记录组件
 import Record from './pages/dashboard/Record';
 import Doctor from './pages/dashboard/Doctor';
 import Storehouse from './pages/dashboard/Storehouse';
@@ -36,9 +35,9 @@ function App() {
           <Route path="overview" element={<Overview />} />
           <Route path="record" element={<Record />} />
 
-          {/* === 挂号员模块 === */}
+          {/* === 挂号模块 === */}
           <Route path="bookings" element={
-            <ProtectedRoute allowedRoles={['registration', 'org_admin', 'global_admin']}>
+            <ProtectedRoute allowedRoles={['general_user', 'registration']}>
               <Bookings />
             </ProtectedRoute>
           } />
@@ -52,17 +51,8 @@ function App() {
 
           {/* === 财务模块 (收银台) === */}
           <Route path="payment" element={
-            // 注意：收银台通常只给财务看，普通用户(general_user)不应该能进来操作收钱
-            // 如果你想让普通用户看自己的账单，那是以后的功能。目前这是"工作台"。
-            <ProtectedRoute allowedRoles={['finance', 'org_admin', 'global_admin']}>
+            <ProtectedRoute allowedRoles={['general_user', 'finance', 'org_admin', 'global_admin']}>
               <Payment />
-            </ProtectedRoute>
-          } />
-
-          {/* 🆕 新增：缴费历史记录路由 === */}
-          <Route path="payment-history" element={
-            <ProtectedRoute allowedRoles={['finance', 'org_admin', 'global_admin']}>
-              <PaymentHistory />
             </ProtectedRoute>
           } />
 
