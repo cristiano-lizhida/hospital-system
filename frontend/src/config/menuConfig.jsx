@@ -45,7 +45,7 @@ export const menuConfig = [
         path: 'medical_record',
         label: '档案中心',
         icon: <FileText size={18} />,
-        roles: Object.values(ROLES)
+        roles: [ROLES.GENERAL_USER, ROLES.REGISTRATION, ROLES.FINANCE, ROLES.ORG_ADMIN, ROLES.GLOBAL_ADMIN]
     },
     {
         path: 'users',

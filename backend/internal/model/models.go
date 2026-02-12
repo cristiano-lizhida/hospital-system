@@ -21,13 +21,18 @@ type User struct {
 	DeletedAt  gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
-// Medicine 药品表 (物资管理核心)
-type Medicine struct {
-	ID    uint    `gorm:"primaryKey" json:"id"`
-	Name  string  `gorm:"not null" json:"name"`
-	Price float64 `json:"price"`
-	Stock int     `json:"stock"`
-	OrgID uint    `json:"org_id"`
+// InventoryItem 物资表
+type InventoryItem struct {
+	ID          uint           `gorm:"primaryKey" json:"id"`
+	Name        string         `gorm:"not null" json:"name"`
+	Category    string         `json:"category"`
+	Price       float64        `json:"price"`
+	Stock       int            `json:"stock"`
+	Description string         `json:"description"`
+	OrgID       uint           `json:"org_id"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
+	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 // Patient 患者表

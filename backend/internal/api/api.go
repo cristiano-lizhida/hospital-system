@@ -314,7 +314,7 @@ func ConfirmPayment(c *gin.Context) {
 
 	// 3. 扣减库存 (如果订单关联了药品)
 	if order.MedicineID != 0 {
-		var med model.Medicine
+		var med model.InventoryItem
 		if err := tx.First(&med, order.MedicineID).Error; err == nil {
 			if med.Stock >= order.Quantity {
 				tx.Model(&med).Update("stock", med.Stock-order.Quantity)
@@ -437,7 +437,7 @@ func SubmitMedicalRecord(c *gin.Context) {
 	tx := database.DB.Begin() // 开启事务
 
 	// 1. 检查并锁定药品（获取价格）
-	var med model.Medicine
+	var med model.InventoryItem
 	if err := tx.First(&med, req.MedicineID).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusBadRequest, gin.H{"error": "药品不存在，请检查药品ID"})
@@ -487,20 +487,83 @@ func SubmitMedicalRecord(c *gin.Context) {
 // --- 库房业务 (Storehouse) ---
 // 对应页面：/storehouse
 
+// GetInventory 获取库存列表 (支持搜索和分类过滤)
 func GetInventory(c *gin.Context) {
-	var meds []model.Medicine
-	database.DB.Find(&meds)
-	c.JSON(http.StatusOK, gin.H{"data": meds})
+	category := c.Query("category")
+	search := c.Query("search")
+
+	var items []model.InventoryItem
+	tx := database.DB.Model(&model.InventoryItem{})
+
+	if category != "" && category != "全部" {
+		tx = tx.Where("category = ?", category)
+	}
+	if search != "" {
+		tx = tx.Where("name LIKE ?", "%"+search+"%")
+	}
+
+	tx.Order("updated_at desc").Find(&items)
+	c.JSON(http.StatusOK, gin.H{"data": items})
 }
 
-func AddMedicine(c *gin.Context) {
-	var med model.Medicine
-	if err := c.ShouldBindJSON(&med); err != nil {
+// AddOrUpdateInventoryItem 新增或更新物资
+func AddOrUpdateInventoryItem(c *gin.Context) {
+	var req model.InventoryItem
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "参数错误"})
 		return
 	}
-	database.DB.Create(&med)
-	c.JSON(http.StatusOK, gin.H{"msg": "添加药品成功", "data": med})
+
+	// 智能匹配：如果名字和分类相同，则认为是同一物品，直接增加库存
+	var existingItem model.InventoryItem
+	result := database.DB.Where("name = ? AND category = ?", req.Name, req.Category).First(&existingItem)
+
+	if result.Error == nil {
+		// 找到了同名同类物品 -> 更新库存和价格
+		existingItem.Stock += req.Stock
+		existingItem.Price = req.Price // 更新为最新单价
+		existingItem.Description = req.Description
+		database.DB.Save(&existingItem)
+		c.JSON(http.StatusOK, gin.H{"msg": "已合并库存", "data": existingItem})
+	} else {
+		// 没找到 -> 创建新记录
+		// 确保 OrgID 从 Token 获取，这里简化处理
+		req.OrgID = 1
+		database.DB.Create(&req)
+		c.JSON(http.StatusOK, gin.H{"msg": "新物资入库成功", "data": req})
+	}
+}
+
+// UpdateInventoryItem 编辑物资 (改名字、分类等)
+func UpdateInventoryItem(c *gin.Context) {
+	id := c.Param("id")
+	var req model.InventoryItem
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "参数错误"})
+		return
+	}
+
+	var item model.InventoryItem
+	if err := database.DB.First(&item, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "物资不存在"})
+		return
+	}
+
+	item.Name = req.Name
+	item.Category = req.Category
+	item.Price = req.Price
+	item.Stock = req.Stock
+	item.Description = req.Description
+
+	database.DB.Save(&item)
+	c.JSON(http.StatusOK, gin.H{"msg": "更新成功", "data": item})
+}
+
+// DeleteInventoryItem 删除物资
+func DeleteInventoryItem(c *gin.Context) {
+	id := c.Param("id")
+	database.DB.Delete(&model.InventoryItem{}, id)
+	c.JSON(http.StatusOK, gin.H{"msg": "删除成功"})
 }
 
 // --- 医疗记录 (medical_record) ---
@@ -658,7 +721,7 @@ func GetDashboardStats(c *gin.Context) {
 
 	// 4. 统计药品种类
 	var medCount int64
-	database.DB.Model(&model.Medicine{}).Count(&medCount)
+	database.DB.Model(&model.InventoryItem{}).Count(&medCount)
 
 	c.JSON(http.StatusOK, gin.H{
 		"income":   totalIncome,

@@ -123,10 +123,18 @@ func main() {
 		// 对应图中: /storehouse -> 物资管理
 		store := dash.Group("/storehouse")
 		{
-			// 医生只能看库存，不能改
+			// 1. 公共权限接口 (GET)：医生 + 库管 + 管理员
+			// 这个接口权限比较宽，单独写
 			store.GET("/", middleware.RoleMiddleware("doctor", "storekeeper", "org_admin", "global_admin"), api.GetInventory)
-			// 只有库管和管理员能进货
-			store.POST("/", middleware.RoleMiddleware("storekeeper", "org_admin", "global_admin"), api.AddMedicine)
+
+			// 2. 管理权限接口 (增/删/改)：仅库管 + 管理员
+			manage := store.Group("/")
+			manage.Use(middleware.RoleMiddleware("storekeeper", "org_admin", "global_admin"))
+			{
+				manage.POST("/", api.AddOrUpdateInventoryItem)
+				manage.PUT("/:id", api.UpdateInventoryItem)
+				manage.DELETE("/:id", api.DeleteInventoryItem)
+			}
 		}
 
 		// [Group 7] 用户管理 (/users)

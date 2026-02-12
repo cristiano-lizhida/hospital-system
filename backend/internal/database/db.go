@@ -32,7 +32,7 @@ func InitDB(dbPath string) {
 	// 4. 自动迁移表结构 (自动在 SQLite 里建表)
 	err = DB.AutoMigrate(
 		&model.User{},
-		&model.Medicine{},
+		&model.InventoryItem{},
 		&model.Patient{},
 		&model.Booking{},
 		&model.MedicalRecord{},
