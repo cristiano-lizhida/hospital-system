@@ -330,10 +330,33 @@ func ConfirmPayment(c *gin.Context) {
 
 // GetPendingPatients 获取候诊列表
 func GetPendingPatients(c *gin.Context) {
+	userID := c.GetUint("user_id") // 从 Token 中获取当前医生 ID
+	role := c.GetString("role")    // 获取角色
+
 	var bookings []model.Booking
-	// 修正1：状态改成 "Pending" (大写P)，对应 CreateBooking
-	// 修正2：加了 Order("created_at asc")，先挂号的排前面
-	database.DB.Where("status = ?", "Pending").Order("created_at asc").Find(&bookings)
+
+	// 1. 基础查询：状态必须是 Pending，按时间排序
+	tx := database.DB.Where("status = ?", "Pending").Order("created_at asc")
+
+	// 2. 权限分流
+	if role == "doctor" {
+		// 核心逻辑：医生只能看分配给自己的患者
+		// 这样既实现了“科室隔离”（因为你不能被分配到别科的单子），也实现了“人维度隔离”
+		tx = tx.Where("doctor_id = ?", userID)
+
+		// 扩展思路：如果你希望同一个科室的医生能看到彼此的病人（科室池模式），
+		// 可以改成先查出医生的 Department，然后 tx.Where("department = ?", doc.Department)
+		// 但基于“先选医生”的设计，按 doctor_id 过滤是最严谨的。
+	}
+
+	// 如果是 admin，则不加 doctor_id 限制，可以看到全院候诊情况
+
+	// 3. 执行查询
+	if err := tx.Find(&bookings).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取候诊列表失败"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{"data": bookings})
 }
 
