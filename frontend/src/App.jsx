@@ -1,15 +1,19 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 import DashboardLayout from './layouts/DashboardLayout';
+
+// 公开页面组件
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import Experts from './pages/Experts'; // 你的专家页
+import Experts from './pages/Experts';
+
+// 业务页面组件
 import Overview from './pages/dashboard/Overview';
 import Bookings from './pages/dashboard/Bookings';
 import Payment from './pages/dashboard/Payment';
-import PaymentHistory from './pages/dashboard/PaymentHistory';
-import Record from './pages/dashboard/Record';
+import Finance from './pages/dashboard/Finance';
+import Medical_record from './pages/dashboard/Medical_record';
 import Doctor from './pages/dashboard/Doctor';
 import Storehouse from './pages/dashboard/Storehouse';
 import Users from './pages/dashboard/Users';
@@ -18,22 +22,65 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* 1. 公开入口 */}
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        {/* 👇👇👇 这个就是我帮你加回来的关键路由 👇👇👇 */}
         <Route path="/experts" element={<Experts />} />
-
-        <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+        {/* 2. 受保护的 Dashboard */}
+        <Route path="/dashboard" element={
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }>
+          {/* 通用子路由 */}
           <Route path="overview" element={<Overview />} />
-          <Route path="record" element={<Record />} />
-          <Route path="bookings" element={<ProtectedRoute allowedRoles={['registration', 'org_admin', 'global_admin', 'general_user']}><Bookings /></ProtectedRoute>} />
-          <Route path="doctor" element={<ProtectedRoute allowedRoles={['doctor', 'global_admin']}><Doctor /></ProtectedRoute>} />
-          <Route path="payment" element={<ProtectedRoute allowedRoles={['finance', 'org_admin', 'global_admin', 'general_user']}><Payment /></ProtectedRoute>} />
-          <Route path="payment-history" element={<ProtectedRoute allowedRoles={['finance', 'org_admin', 'global_admin']}><PaymentHistory /></ProtectedRoute>} />
-          <Route path="storehouse" element={<ProtectedRoute allowedRoles={['storekeeper', 'org_admin', 'global_admin']}><Storehouse /></ProtectedRoute>} />
-          <Route path="users" element={<ProtectedRoute allowedRoles={['org_admin', 'global_admin']}><Users /></ProtectedRoute>} />
+          <Route path="medical_record" element={<Medical_record />} />
+
+          {/* === 挂号模块 === */}
+          <Route path="bookings" element={
+            <ProtectedRoute allowedRoles={['general_user', 'registration']}>
+              <Bookings />
+            </ProtectedRoute>
+          } />
+
+          {/* === 医生模块 === */}
+          <Route path="doctor" element={
+            <ProtectedRoute allowedRoles={['doctor', 'global_admin']}>
+              <Doctor />
+            </ProtectedRoute>
+          } />
+
+          {/* === 支付模块 === */}
+          <Route path="payment" element={
+            <ProtectedRoute allowedRoles={['general_user', 'registration', 'org_admin', 'global_admin']}>
+              <Payment />
+            </ProtectedRoute>
+          } />
+
+          {/* === 财务模块 === */}
+          <Route path="finance" element={
+            <ProtectedRoute allowedRoles={['finance', 'org_admin', 'global_admin']}>
+              <Finance />
+            </ProtectedRoute>
+          } />
+
+          {/* === 仓库模块 === */}
+          <Route path="storehouse" element={
+            <ProtectedRoute allowedRoles={['storekeeper', 'org_admin', 'global_admin']}>
+              <Storehouse />
+            </ProtectedRoute>
+          } />
+
+          {/* === 管理员模块 === */}
+          <Route path="users" element={
+            <ProtectedRoute allowedRoles={['org_admin', 'global_admin']}>
+              <Users />
+            </ProtectedRoute>
+          } />
         </Route>
+
+        {/* 404 重定向 */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
