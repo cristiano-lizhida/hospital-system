@@ -148,6 +148,7 @@ func main() {
 			admin.GET("/", api.ManageUserStatus)
 			admin.POST("/", api.CreateUser)
 			admin.PUT("/:id", api.UpdateUser)
+			admin.DELETE("/:id", api.DeleteUser)
 		}
 	}
 

@@ -6,6 +6,7 @@ import DashboardLayout from './layouts/DashboardLayout';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Experts from './pages/Experts';
 
 // 业务页面组件
 import Overview from './pages/dashboard/Overview';
@@ -25,7 +26,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-
+        <Route path="/experts" element={<Experts />} />
         {/* 2. 受保护的 Dashboard */}
         <Route path="/dashboard" element={
           <ProtectedRoute>

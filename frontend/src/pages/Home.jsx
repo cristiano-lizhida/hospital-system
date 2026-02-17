@@ -10,7 +10,7 @@ import {
 } from '@ant-design/icons';
 
 const { Header, Content, Footer } = Layout;
-const { Title, Paragraph, Text } = Typography;
+const { Title, Paragraph } = Typography;
 
 const Home = () => {
     const navigate = useNavigate();
@@ -32,6 +32,7 @@ const Home = () => {
                 </div>
                 <Space>
                     <Button type="text" onClick={() => navigate('/login')}>关于我们</Button>
+                    <Button type="text" onClick={() => navigate('/experts')}>专家团队</Button>
                     <Button type="primary" onClick={() => navigate('/login')}>登录</Button>
                     <Button onClick={() => navigate('/register')}>注册</Button>
                 </Space>

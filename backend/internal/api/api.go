@@ -703,6 +703,17 @@ func UpdateUser(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"msg": "用户信息已更新", "data": user})
 }
 
+// 对应路由: DELETE /api/v1/dashboard/users/:id
+func DeleteUser(c *gin.Context) {
+	id := c.Param("id")
+	// 硬删除 (Unscoped) 或者软删除都可以，这里用软删除
+	if err := database.DB.Delete(&model.User{}, id).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "删除失败"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"msg": "删除成功"})
+}
+
 // --- 统计看板 (Dashboard Stats) ---
 
 func GetDashboardStats(c *gin.Context) {
